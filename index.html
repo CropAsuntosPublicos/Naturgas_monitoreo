@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monitoreo de Medios · Naturgas · Junio 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --verde:      #8cc63f;
+    --azul:       #29a5dc;
+    --blanco:     #ffffff;
+    --fondo:      #f4f7f9;
+    --negro:      #111418;
+    --gris-osc:   #2c3340;
+    --gris-med:   #4a5568;
+    --gris:       #718096;
+    --gris-borde: #e2e8f0;
+    --pos:        #8cc63f;
+    --pos-bg:     #f0f8e6;
+    --neg:        #e05252;
+    --neg-bg:     #fdeaea;
+    --neu:        #29a5dc;
+    --neu-bg:     #e8f5fc;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { height:100%; }
+  body { font-family:'Inter',sans-serif; background:var(--fondo); color:var(--negro); line-height:1.5; -webkit-font-smoothing:antialiased; }
+
+  /* ── SCROLLBAR PERSONALIZADA ── */
+  .scroll-fino::-webkit-scrollbar { width:6px; height:6px; }
+  .scroll-fino::-webkit-scrollbar-track { background:transparent; }
+  .scroll-fino::-webkit-scrollbar-thumb { background:#d3dae2; border-radius:10px; }
+  .scroll-fino::-webkit-scrollbar-thumb:hover { background:#b7c1cc; }
+  .scroll-fino { scrollbar-width:thin; scrollbar-color:#d3dae2 transparent; }
+
+  /* ── HEADER ── */
+  .header {
+    background:var(--negro);
+    padding:0 48px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    height:56px;
+    position:sticky;
+    top:0;
+    z-index:100;
+  }
+  .header-left { display:flex; align-items:center; gap:20px; }
+  .logo-crop { display:flex; align-items:center; gap:10px; }
+  .logo-crop-mark {
+    width:30px; height:30px;
+    background:var(--verde);
+    border-radius:6px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Montserrat',sans-serif;
+    font-weight:900; font-size:13px; color:#fff;
+    letter-spacing:-0.02em;
+  }
+  .logo-crop-text { font-family:'Montserrat',sans-serif; font-weight:800; font-size:14px; color:#fff; letter-spacing:0.04em; }
+  .logo-crop-text span { display:block; font-size:8px; font-weight:400; letter-spacing:0.1em; color:rgba(255,255,255,0.35); text-transform:uppercase; margin-top:1px; }
+  .logo-sep { width:1px; height:26px; background:rgba(255,255,255,0.15); }
+  .logo-naturgas { font-family:'Montserrat',sans-serif; font-weight:900; font-size:16px; color:var(--verde); letter-spacing:0.02em; }
+  .logo-naturgas span { font-weight:400; color:rgba(255,255,255,0.5); font-size:9px; letter-spacing:0.12em; display:block; text-transform:uppercase; margin-top:1px; }
+  .periodo-badge {
+    display:inline-flex; align-items:center; gap:6px;
+    background:rgba(140,198,63,0.15);
+    border:1px solid rgba(140,198,63,0.3);
+    color:var(--verde);
+    font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;
+    padding:4px 12px; border-radius:20px;
+    white-space:nowrap;
+  }
+
+  /* ── HERO (compacto) ── */
+  .hero {
+    background:linear-gradient(135deg, #111c0a 0%, #162309 40%, #0d1a2a 100%);
+    padding:18px 48px;
+    position:relative; overflow:hidden;
+  }
+  .hero::before {
+    content:'';
+    position:absolute; top:-90px; right:-90px;
+    width:260px; height:260px; border-radius:50%;
+    border:44px solid rgba(140,198,63,0.08);
+  }
+  .hero-inner { position:relative; z-index:1; max-width:1400px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:24px; flex-wrap:wrap; }
+  .hero-titulos { min-width:220px; }
+  .hero-eyebrow { font-size:9px; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; color:var(--verde); margin-bottom:3px; }
+  .hero-titulo {
+    font-family:'Montserrat',sans-serif;
+    font-size:20px; font-weight:900; color:#fff;
+    line-height:1.15; letter-spacing:-0.01em;
+  }
+  .hero-titulo em { font-style:normal; color:var(--verde); }
+  .hero-sub { font-size:11px; color:rgba(255,255,255,0.4); margin-top:2px; }
+
+  .hero-kpis { display:grid; grid-template-columns:repeat(2,1fr); gap:8px 20px; flex:1; max-width:640px; }
+  .hero-kpi { padding:0 16px 0 0; border-right:1px solid rgba(255,255,255,0.1); }
+  .hero-kpi-label { font-size:8px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:rgba(255,255,255,0.3); margin-bottom:3px; }
+  .hero-kpi-valor { font-family:'Montserrat',sans-serif; font-weight:900; font-size:12px; color:rgba(255,255,255,0.9); white-space:nowrap; }
+
+  /* ── FILTROS ── */
+  .filtros-bar {
+    background:#fff;
+    border-bottom:1px solid var(--gris-borde);
+    padding:0 48px;
+    display:flex; align-items:center; gap:16px;
+    height:46px;
+    position:sticky; top:56px; z-index:90;
+    overflow-x:auto;
+  }
+  .filtros-label { font-size:10px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--gris); flex-shrink:0; }
+  .filtros-grupo { display:flex; gap:5px; align-items:center; flex-shrink:0; }
+  .filtros-sep { width:1px; height:20px; background:var(--gris-borde); flex-shrink:0; }
+  .filtro-btn {
+    padding:3px 12px; border-radius:20px;
+    border:1.5px solid var(--gris-borde);
+    background:transparent;
+    font-family:'Inter',sans-serif; font-size:11.5px; font-weight:600; color:var(--gris);
+    cursor:pointer; transition:all .15s; white-space:nowrap;
+  }
+  .filtro-btn:hover { border-color:var(--verde); color:var(--verde); }
+  .filtro-btn.active     { background:var(--verde);  border-color:var(--verde);  color:#fff; }
+  .filtro-btn.active-neg { background:var(--neg);    border-color:var(--neg);    color:#fff; }
+  .filtro-btn.active-neu { background:var(--azul);   border-color:var(--azul);   color:#fff; }
+  .resultados-count { margin-left:auto; font-size:12px; color:var(--gris); font-weight:500; flex-shrink:0; }
+  .resultados-count strong { color:var(--verde); font-weight:700; }
+
+  /* ── MAIN: mobile-first (apilado) ── */
+  .main { max-width:1400px; margin:0 auto; padding:16px 48px 32px; }
+  .col-izq, .col-der { display:flex; flex-direction:column; gap:14px; }
+  .col-izq { margin-bottom:14px; }
+
+  /* ── KPI STRIP ── */
+  .kpi-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .kpi-card {
+    background:#fff; border-radius:12px;
+    padding:14px 16px 12px;
+    border:1px solid var(--gris-borde);
+  }
+  .kpi-card.total {
+    background:linear-gradient(135deg, #162309 0%, #1e3010 100%);
+    border-color:transparent;
+  }
+  .kpi-eyebrow { font-size:8.5px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:var(--gris); margin-bottom:5px; }
+  .kpi-card.total .kpi-eyebrow { color:rgba(255,255,255,0.45); }
+  .kpi-num { font-family:'Montserrat',sans-serif; font-weight:900; font-size:28px; letter-spacing:-0.03em; line-height:1; display:block; margin-bottom:2px; color:var(--negro); }
+  .kpi-card.total .kpi-num { font-size:32px; color:var(--verde); }
+  .kpi-num.pos { color:var(--pos); }
+  .kpi-num.neg { color:var(--neg); }
+  .kpi-num.neu { color:var(--neu); }
+  .kpi-desc { font-size:10px; color:var(--gris); font-weight:500; }
+  .kpi-card.total .kpi-desc { color:rgba(255,255,255,0.45); }
+  .kpi-pct-bar { margin-top:7px; height:4px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden; }
+  .kpi-pct-fill { height:100%; border-radius:2px; transition:width .6s ease; }
+
+  /* ── CHARTS GRID ── */
+  .charts-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .chart-card {
+    background:#fff; border-radius:12px;
+    padding:16px 16px 14px;
+    border:1px solid var(--gris-borde);
+  }
+  .chart-titulo { font-size:9.5px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--gris); margin-bottom:10px; }
+  .chart-area { position:relative; height:170px; }
+  .chart-legend { display:flex; gap:12px; margin-top:10px; justify-content:center; flex-wrap:wrap; }
+  .legend-item { display:flex; align-items:center; gap:5px; font-size:10.5px; color:var(--gris); font-weight:500; }
+  .legend-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+  /* ── RANKING (scroll interno) ── */
+  .ranking-card {
+    background:#fff; border-radius:12px;
+    border:1px solid var(--gris-borde);
+    overflow:hidden;
+    display:flex; flex-direction:column;
+  }
+  .ranking-header { padding:12px 20px 10px; border-bottom:1px solid var(--gris-borde); flex-shrink:0; }
+  .ranking-titulo { font-size:9.5px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--gris); }
+  .ranking-body { padding:4px 0; max-height:260px; overflow-y:auto; }
+  .ranking-row {
+    display:grid;
+    grid-template-columns:26px 1fr 110px 32px;
+    align-items:center; gap:10px;
+    padding:8px 20px;
+    border-bottom:1px solid var(--fondo);
+    transition:background .1s;
+  }
+  .ranking-row:last-child { border-bottom:none; }
+  .ranking-row:hover { background:var(--fondo); }
+  .ranking-num { font-family:'Montserrat',sans-serif; font-weight:800; font-size:14px; color:#d0d8e4; text-align:center; }
+  .ranking-medio-nombre { font-size:12.5px; font-weight:600; color:var(--negro); }
+  .ranking-medio-tipo { font-size:9.5px; color:var(--gris); font-weight:500; text-transform:uppercase; letter-spacing:0.06em; margin-top:1px; }
+  .ranking-bar-track { height:6px; background:#eef1f5; border-radius:3px; overflow:hidden; }
+  .ranking-bar-fill { height:100%; border-radius:3px; background:var(--verde); transition:width .5s ease; }
+  .ranking-count { font-family:'Montserrat',sans-serif; font-weight:700; font-size:13px; color:var(--gris-med); text-align:right; }
+
+  /* ── TABLA (scroll interno, header sticky) ── */
+  .tabla-card {
+    background:#fff; border-radius:12px;
+    border:1px solid var(--gris-borde);
+    overflow:hidden;
+    display:flex; flex-direction:column;
+    flex:1;
+    min-height:0;
+  }
+  .tabla-header { padding:12px 20px 10px; border-bottom:1px solid var(--gris-borde); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+  .tabla-titulo { font-size:9.5px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--gris); }
+  .tabla-scroll { overflow-y:auto; max-height:420px; }
+  table { width:100%; border-collapse:collapse; }
+  thead th {
+    padding:9px 14px;
+    font-size:9.5px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase;
+    color:var(--gris); background:var(--fondo);
+    border-bottom:1px solid var(--gris-borde);
+    text-align:left; white-space:nowrap;
+    position:sticky; top:0; z-index:5;
+  }
+  tbody tr { border-bottom:1px solid var(--fondo); transition:background .1s; }
+  tbody tr:last-child { border-bottom:none; }
+  tbody tr:hover { background:#fafbfc; }
+  tbody td { padding:9px 14px; font-size:11.5px; color:var(--gris-med); vertical-align:top; }
+  .fecha-cell { white-space:nowrap; font-weight:600; color:var(--negro); font-size:10.5px; }
+  .fuente-cell { font-weight:600; color:var(--negro); font-size:11.5px; }
+  .tipo-tag {
+    display:inline-flex; align-items:center;
+    background:var(--fondo); color:var(--gris);
+    font-size:9.5px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase;
+    padding:2px 7px; border-radius:4px;
+    white-space:nowrap;
+  }
+  .titular-cell { max-width:300px; }
+  .titular-link {
+    color:var(--gris-osc); font-weight:500; font-size:11.5px;
+    text-decoration:none; line-height:1.4;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+  }
+  .titular-link:hover { color:var(--verde); text-decoration:underline; }
+  .badge {
+    display:inline-flex; align-items:center; gap:4px;
+    font-size:9.5px; font-weight:700; padding:3px 8px; border-radius:10px;
+    white-space:nowrap;
+  }
+  .badge-pos { background:var(--pos-bg); color:var(--pos); }
+  .badge-neg { background:var(--neg-bg); color:var(--neg); }
+  .badge-neu { background:var(--neu-bg); color:var(--neu); }
+  .tabla-empty { padding:32px 20px; text-align:center; color:var(--gris); font-size:12.5px; display:none; }
+
+  /* ── FOOTER ── */
+  .footer {
+    border-top:1px solid var(--gris-borde);
+    padding:14px 48px;
+    display:flex; align-items:center; justify-content:space-between;
+    max-width:1400px; margin:0 auto;
+    flex-wrap:wrap; gap:6px;
+  }
+  .footer-copy { font-size:10.5px; color:var(--gris); }
+  .footer-copy strong { color:var(--gris-med); }
+
+  /* ══════════════════════════════════
+     ESCRITORIO: dos columnas asimétricas
+     ══════════════════════════════════ */
+  @media (min-width: 900px) {
+    .hero-kpis { grid-template-columns:repeat(5,auto); gap:0; }
+    .hero-kpi { padding:0 20px 0 0; margin-right:0; }
+    .hero-kpi:last-child { border-right:none; }
+
+    .main {
+      display:grid;
+      grid-template-columns: 1fr 1.15fr;
+      align-items:start;
+      gap:18px;
+      padding:20px 48px 40px;
+    }
+    .col-izq { margin-bottom:0; }
+    .col-der { height:calc(100vh - 56px - 46px - 40px); position:sticky; top:calc(56px + 46px + 20px); }
+    .ranking-card { flex-shrink:0; }
+    .tabla-card { flex:1; min-height:0; }
+    .tabla-scroll { max-height:none; height:100%; }
+  }
+
+  /* ── MOBILE tweaks (< 900px) ── */
+  @media (max-width: 899px) {
+    .header,.filtros-bar,.main,.footer { padding-left:16px; padding-right:16px; }
+    .hero { padding:14px 16px; }
+    .hero-inner { flex-direction:column; align-items:flex-start; gap:10px; }
+    .hero-titulo { font-size:18px; }
+    .hero-kpis { max-width:100%; width:100%; }
+    .kpi-strip { grid-template-columns:repeat(3,1fr); gap:8px; }
+    .kpi-num { font-size:20px; }
+    .kpi-card.total .kpi-num { font-size:24px; }
+    .charts-grid { grid-template-columns:1fr; }
+    .ranking-row { grid-template-columns:24px 1fr 70px 28px; }
+    .ranking-body { max-height:220px; }
+    .tabla-scroll { max-height:320px; }
+    .titular-cell { max-width:160px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-left">
+    <div class="logo-crop">
+      <div class="logo-crop-mark">C</div>
+      <div class="logo-crop-text">CROP<span>Asuntos Públicos</span></div>
+    </div>
+    <div class="logo-sep"></div>
+    <div class="logo-naturgas">Naturgas<span>Monitoreo de Medios</span></div>
+  </div>
+  <div class="periodo-badge">Junio 2026 · 1–10</div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-titulos">
+      <div class="hero-eyebrow">Informe de Prensa</div>
+      <h1 class="hero-titulo">Cobertura mediática <em>Naturgas</em></h1>
+      <p class="hero-sub">1 al 10 de junio de 2026 · Medios nacionales y regionales</p>
+    </div>
+    <div class="hero-kpis" id="heroKpis"></div>
+  </div>
+</section>
+
+<!-- FILTROS -->
+<div class="filtros-bar scroll-fino">
+  <span class="filtros-label">Tipo</span>
+  <div class="filtros-grupo" id="filtroTipo">
+    <button class="filtro-btn active" data-tipo="Todos" onclick="setTipo(this)">Todos</button>
+    <button class="filtro-btn" data-tipo="Medio electrónico" onclick="setTipo(this)">Digital</button>
+    <button class="filtro-btn" data-tipo="TV" onclick="setTipo(this)">TV</button>
+    <button class="filtro-btn" data-tipo="Radio" onclick="setTipo(this)">Radio</button>
+    <button class="filtro-btn" data-tipo="Periódico impreso" onclick="setTipo(this)">Prensa</button>
+  </div>
+  <div class="filtros-sep"></div>
+  <span class="filtros-label">Sentimiento</span>
+  <div class="filtros-grupo" id="filtroSent">
+    <button class="filtro-btn active" data-sent="Todos" onclick="setSent(this)">Todos</button>
+    <button class="filtro-btn" data-sent="Positiva" onclick="setSent(this)">Positivo</button>
+    <button class="filtro-btn" data-sent="Negativa" onclick="setSent(this)">Negativo</button>
+    <button class="filtro-btn" data-sent="Neutra" onclick="setSent(this)">Neutro</button>
+  </div>
+  <div class="resultados-count"><strong id="countNum">15</strong> notas</div>
+</div>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- COLUMNA IZQUIERDA: KPIs + Gráficas -->
+  <div class="col-izq">
+    <div class="kpi-strip">
+      <div class="kpi-card total">
+        <div class="kpi-eyebrow">Total de notas</div>
+        <span class="kpi-num" id="kpiTotal">—</span>
+        <div class="kpi-desc">notas monitoreadas</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-eyebrow">Sentimiento positivo</div>
+        <span class="kpi-num pos" id="kpiPos">—</span>
+        <div class="kpi-desc" id="kpiPosDesc">—</div>
+        <div class="kpi-pct-bar"><div class="kpi-pct-fill" id="kpiPosBar" style="background:var(--pos)"></div></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-eyebrow">Negativos · Neutros</div>
+        <span class="kpi-num neg" id="kpiNeg">—</span>
+        <div class="kpi-desc" id="kpiNegDesc">—</div>
+        <div class="kpi-pct-bar"><div class="kpi-pct-fill" id="kpiNegBar" style="background:var(--neg)"></div></div>
+      </div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-titulo">Distribución de sentimiento</div>
+        <div class="chart-area"><canvas id="chartSent"></canvas></div>
+        <div class="chart-legend" id="legendSent"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-titulo">Notas por tipo de medio</div>
+        <div class="chart-area"><canvas id="chartTipo"></canvas></div>
+        <div class="chart-legend" id="legendTipo"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COLUMNA DERECHA: Ranking + Tabla -->
+  <div class="col-der">
+    <div class="ranking-card">
+      <div class="ranking-header">
+        <div class="ranking-titulo">Ranking de medios por volumen</div>
+      </div>
+      <div class="ranking-body scroll-fino" id="rankingBody"></div>
+    </div>
+
+    <div class="tabla-card">
+      <div class="tabla-header">
+        <div class="tabla-titulo">Registro de notas</div>
+      </div>
+      <div class="tabla-scroll scroll-fino">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Fuente</th>
+              <th>Tipo</th>
+              <th>Titular</th>
+              <th>Sentimiento</th>
+            </tr>
+          </thead>
+          <tbody id="tablaBody"></tbody>
+        </table>
+        <div class="tabla-empty" id="tablaEmpty">No hay notas que coincidan con los filtros seleccionados.</div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-copy">Elaborado por <strong>CROP Asuntos Públicos</strong> para Naturgas · <span id="footerFecha"></span></div>
+  <div class="footer-copy">Período: 1–10 de junio de 2026</div>
+</footer>
+
+<script>
+// ══════════════════════════
+// DATOS
+// ══════════════════════════
+const NOTAS = [
+  {fecha:'01/06/2026',tipo:'Medio electrónico',titular:'ANLA aprueba nuevo proyecto de regasificación en La Guajira y suma cinco iniciativas autorizadas en el Caribe',fuente:'Forbes Colombia',sentimiento:'Positiva',url:'https://forbes.co/economia-y-finanzas/anla-aprueba-nuevo-proyecto-de-regasificacion-en-la-guajira-y-suma-cinco-iniciativas-autorizadas-en-el-caribe'},
+  {fecha:'01/06/2026',tipo:'Medio electrónico',titular:'Gobierno Petro detalló qué pasará con los contratos de Canacol en Colombia: así avanzan las negociaciones para que no haya escasez de gas',fuente:'Infobae América',sentimiento:'Neutra',url:'https://www.infobae.com/colombia/2026/06/01/gobierno-petro-detallo-que-pasara-con-los-contratos-de-canacol-en-colombia-asi-avanzan-las-negociaciones-para-que-no-haya-escasez-de-gas/'},
+  {fecha:'03/06/2026',tipo:'Medio electrónico',titular:'Facturas de energía en el Caribe podrían subir hasta un 30% por importaciones de gas; el país solía ser autosuficiente',fuente:'Noticias Canal RCN',sentimiento:'Negativa',url:'https://www.noticiasrcn.com/colombia/facturas-de-energia-en-el-caribe-podria-subir-hasta-un-30-por-importaciones-de-gas-el-pais-solia-ser-autosuficiente-1027612'},
+  {fecha:'03/06/2026',tipo:'TV',titular:'Dependencia de gas en Colombia y sus consecuencias',fuente:'RCN TV - Noticias del Medio Día',sentimiento:'Neutra',url:'https://www.prensanet.com/nota/?noticia=13346143&sector=37339&nombre=bmF0dXJnYXM=&codigo=744322341811'},
+  {fecha:'03/06/2026',tipo:'Medio electrónico',titular:'Gas para más de 12 millones de usuarios entra en revisión: Procuraduría analiza riesgos y retos del servicio',fuente:'Portafolio',sentimiento:'Positiva',url:'https://www.portafolio.co/energia/gas-para-mas-de-12-millones-de-usuarios-entra-en-revision-procuraduria-analiza-riesgos-y-retos-del-servicio-495470'},
+  {fecha:'04/06/2026',tipo:'Medio electrónico',titular:'Procuraduría impulsa articulación nacional para fortalecer el servicio de gas y enfrentar riesgos climáticos',fuente:'La Libertad',sentimiento:'Positiva',url:'https://diariolalibertad.com/2026/06/04/procuraduria-impulsa-articulacion-nacional-para-fortalecer-el-servicio-de-gas-y-enfrentar-riesgos-climaticos/'},
+  {fecha:'04/06/2026',tipo:'Medio electrónico',titular:'Procuraduría impulsa articulación nacional para fortalecer el servicio de gas y enfrentar riesgos climáticos',fuente:'La Libertad',sentimiento:'Positiva',url:'https://diariolalibertad.com/2026/06/04/procuraduria-impulsa-articulacion-nacional-para-fortalecer-el-servicio-de-gas-y-enfrentar-riesgos-climaticos/'},
+  {fecha:'04/06/2026',tipo:'Medio electrónico',titular:'Procuraduría analiza servicio de gas natural para 12 millones',fuente:'El Centavo',sentimiento:'Positiva',url:'https://elcentavo.co/articulo/procuraduria-analiza-servicio-de-gas-natural-para-12-millones/28648/'},
+  {fecha:'04/06/2026',tipo:'Medio electrónico',titular:'Procuraduría impulsa acciones para fortalecer el servicio de gas natural en Colombia',fuente:'El Informador',sentimiento:'Positiva',url:'https://www.elinformador.com.co/index.php/general/79-nacional/353415-procuraduria-impulsa-acciones-para-fortalecer-el-servicio-de-gas-natural-en-colombia'},
+  {fecha:'04/06/2026',tipo:'Medio electrónico',titular:'Procuraduría impulsa articulación nacional para fortalecer el servicio de gas y enfrentar riesgos climáticos',fuente:'Noticias BQ',sentimiento:'Positiva',url:'https://www.noticiasbq.com/colombia/procuraduria-impulsa-articulacion-nacional-para-fortalecer-el-servicio-de-gas-y-enfrentar-riesgos-climaticos/'},
+  {fecha:'04/06/2026',tipo:'Medio electrónico',titular:'La seguridad jurídica es el único camino para desbloquear el potencial energético de América Latina',fuente:'El Norte',sentimiento:'Neutra',url:'http://elnorte.com.co/la-seguridad-juridica-es-el-unico-camino-para-desbloquear-el-potencial-energetico-de-america-latina/'},
+  {fecha:'04/06/2026',tipo:'Radio',titular:'Reunión de la Procuraduría con Naturgas sobre gas natural',fuente:'Radio Melodía (Bogotá)',sentimiento:'Positiva',url:'https://www.prensanet.com/nota/?noticia=13348499&sector=37339&nombre=bmF0dXJnYXM=&codigo=744322341811'},
+  {fecha:'04/06/2026',tipo:'Medio electrónico',titular:'Más de 12 millones de colombianos dependen del gas natural. La Procuraduría se reunió con Naturgas para evitar que el fenómeno de El Niño ponga en riesgo el servicio.',fuente:'Noticiero CDN',sentimiento:'Positiva',url:'https://www.noticierocdn.com/mas-de-12-millones-de-colombianos-dependen-del-gas-natural-la-procuraduria-se-reunio-con-naturgas-para-evitar-que-el-fenomeno-de-el-nino-ponga-en-riesgo-el-servicio/'},
+  {fecha:'05/06/2026',tipo:'Periódico impreso',titular:'Procuraduría impulsa acciones para fortalecer el servicio de gas natural en Colombia',fuente:'El Informador',sentimiento:'Positiva',url:'https://www.prensanet.com/nota/?noticia=13349756&sector=37339&nombre=bmF0dXJnYXM=&codigo=744322341811'},
+  {fecha:'06/06/2026',tipo:'Medio electrónico',titular:'Caribe lanza hoja de ruta para enfrentar la crisis energética y fortalecer la seguridad eléctrica del país',fuente:'Noticias Canal RCN',sentimiento:'Neutra',url:'https://www.noticiasrcn.com/economia/caribe-lanza-hoja-de-ruta-para-enfrentar-la-crisis-energetica-y-fortalecer-la-seguridad-electrica-del-pais-1028687'},
+];
+
+const COL_POS = '#8cc63f';
+const COL_NEG = '#e05252';
+const COL_NEU = '#29a5dc';
+const TIPO_COLORS = {
+  'Medio electrónico': '#29a5dc',
+  'TV':                '#8cc63f',
+  'Radio':             '#f4a522',
+  'Periódico impreso': '#9b59b6',
+};
+const TIPO_LABELS = {
+  'Medio electrónico': 'Digital',
+  'TV':                'TV',
+  'Radio':             'Radio',
+  'Periódico impreso': 'Prensa',
+};
+
+// ── Estado ──
+let filtroTipo = 'Todos';
+let filtroSent = 'Todos';
+
+// ── Charts ──
+let chartSent, chartTipo;
+
+function initCharts() {
+  const sharedOpts = {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false}, tooltip:{
+      callbacks:{ label: ctx => ` ${ctx.label}: ${ctx.raw} notas` }
+    }},
+    cutout:'62%',
+  };
+  chartSent = new Chart(document.getElementById('chartSent'), {
+    type:'doughnut', data:{ labels:['Positiva','Negativa','Neutra'], datasets:[{data:[0,0,0], backgroundColor:[COL_POS,COL_NEG,COL_NEU], borderWidth:2, borderColor:'#fff'}] },
+    options:{ ...sharedOpts }
+  });
+  chartTipo = new Chart(document.getElementById('chartTipo'), {
+    type:'doughnut', data:{ labels:[], datasets:[{data:[], backgroundColor:[], borderWidth:2, borderColor:'#fff'}] },
+    options:{ ...sharedOpts }
+  });
+}
+
+function buildLegend(chart, containerId, labels, colors) {
+  const c = document.getElementById(containerId);
+  c.innerHTML = labels.map((l,i) =>
+    `<div class="legend-item"><div class="legend-dot" style="background:${colors[i]}"></div>${l}</div>`
+  ).join('');
+}
+
+function pct(n,t){ return t ? Math.round(n/t*100)+'%' : '0%'; }
+
+// ── Render principal ──
+function render() {
+  const data = NOTAS.filter(n =>
+    (filtroTipo === 'Todos' || n.tipo === filtroTipo) &&
+    (filtroSent === 'Todos' || n.sentimiento === filtroSent)
+  );
+
+  const tot = data.length;
+  const pos = data.filter(n => n.sentimiento === 'Positiva').length;
+  const neg = data.filter(n => n.sentimiento === 'Negativa').length;
+  const neu = data.filter(n => n.sentimiento === 'Neutra').length;
+
+  // Hero KPIs (siempre con datos totales sin filtro)
+  const allPos = NOTAS.filter(n=>n.sentimiento==='Positiva').length;
+  const allNeg = NOTAS.filter(n=>n.sentimiento==='Negativa').length;
+  const allNeu = NOTAS.filter(n=>n.sentimiento==='Neutra').length;
+  document.getElementById('heroKpis').innerHTML = `
+    <div class="hero-kpi"><div class="hero-kpi-label">Total notas</div><div class="hero-kpi-valor">${NOTAS.length}</div></div>
+    <div class="hero-kpi"><div class="hero-kpi-label">Positivas</div><div class="hero-kpi-valor">${allPos} (${pct(allPos,NOTAS.length)})</div></div>
+    <div class="hero-kpi"><div class="hero-kpi-label">Negativas</div><div class="hero-kpi-valor">${allNeg} (${pct(allNeg,NOTAS.length)})</div></div>
+    <div class="hero-kpi"><div class="hero-kpi-label">Neutras</div><div class="hero-kpi-valor">${allNeu} (${pct(allNeu,NOTAS.length)})</div></div>
+    <div class="hero-kpi"><div class="hero-kpi-label">Medios monitoreados</div><div class="hero-kpi-valor">${new Set(NOTAS.map(n=>n.fuente)).size}</div></div>
+  `;
+
+  // Contador
+  document.getElementById('countNum').textContent = tot;
+
+  // KPI cards
+  document.getElementById('kpiTotal').textContent = tot;
+  document.getElementById('kpiPos').textContent = pos;
+  document.getElementById('kpiPosDesc').textContent = `${pct(pos,tot)} del total filtrado`;
+  document.getElementById('kpiPosBar').style.width = (tot ? Math.round(pos/tot*100) : 0) + '%';
+  document.getElementById('kpiNeg').textContent = neg;
+  document.getElementById('kpiNegDesc').textContent = `${neg} neg · ${neu} neu`;
+  document.getElementById('kpiNegBar').style.width = (tot ? Math.round(neg/tot*100) : 0) + '%';
+
+  // Chart sentimiento
+  chartSent.data.datasets[0].data = [pos, neg, neu];
+  chartSent.update();
+  buildLegend(chartSent, 'legendSent',
+    [`Positiva (${pos})`, `Negativa (${neg})`, `Neutra (${neu})`],
+    [COL_POS, COL_NEG, COL_NEU]
+  );
+
+  // Chart tipo de medio
+  const tipoCount = {};
+  data.forEach(n => tipoCount[n.tipo] = (tipoCount[n.tipo]||0)+1);
+  const tipoKeys = Object.keys(tipoCount).sort((a,b)=>tipoCount[b]-tipoCount[a]);
+  chartTipo.data.labels = tipoKeys.map(k => TIPO_LABELS[k]||k);
+  chartTipo.data.datasets[0].data = tipoKeys.map(k => tipoCount[k]);
+  chartTipo.data.datasets[0].backgroundColor = tipoKeys.map(k => TIPO_COLORS[k]||'#aaa');
+  chartTipo.update();
+  buildLegend(chartTipo, 'legendTipo',
+    tipoKeys.map(k => `${TIPO_LABELS[k]||k} (${tipoCount[k]})`),
+    tipoKeys.map(k => TIPO_COLORS[k]||'#aaa')
+  );
+
+  // Ranking
+  const medioCount = {};
+  data.forEach(n => medioCount[n.fuente] = (medioCount[n.fuente]||0)+1);
+  const sorted = Object.entries(medioCount).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const max = sorted[0] ? sorted[0][1] : 1;
+  document.getElementById('rankingBody').innerHTML = sorted.map(([fuente, count], i) => {
+    const nota = NOTAS.find(n=>n.fuente===fuente);
+    const tipoLabel = nota ? (TIPO_LABELS[nota.tipo]||nota.tipo) : '—';
+    const barPct = Math.round(count/max*100);
+    return `<div class="ranking-row">
+      <div class="ranking-num">${i+1}</div>
+      <div>
+        <div class="ranking-medio-nombre">${fuente}</div>
+        <div class="ranking-medio-tipo">${tipoLabel}</div>
+      </div>
+      <div class="ranking-bar-track"><div class="ranking-bar-fill" style="width:${barPct}%"></div></div>
+      <div class="ranking-count">${count}</div>
+    </div>`;
+  }).join('');
+
+  // Tabla
+  const tablaBody = document.getElementById('tablaBody');
+  const tablaEmpty = document.getElementById('tablaEmpty');
+  if (!data.length) { tablaBody.innerHTML=''; tablaEmpty.style.display='block'; return; }
+  tablaEmpty.style.display='none';
+  const SC = { Positiva:'badge-pos', Negativa:'badge-neg', Neutra:'badge-neu' };
+  const SI = { Positiva:'↑', Negativa:'↓', Neutra:'→' };
+  const SL = { Positiva:'Positiva', Negativa:'Negativa', Neutra:'Neutra' };
+  tablaBody.innerHTML = data.map(n => `<tr>
+    <td class="fecha-cell">${n.fecha}</td>
+    <td class="fuente-cell">${n.fuente}</td>
+    <td><span class="tipo-tag">${TIPO_LABELS[n.tipo]||n.tipo}</span></td>
+    <td class="titular-cell"><a class="titular-link" href="${n.url}" target="_blank" rel="noopener">${n.titular}</a></td>
+    <td><span class="badge ${SC[n.sentimiento]}">${SI[n.sentimiento]} ${SL[n.sentimiento]}</span></td>
+  </tr>`).join('');
+}
+
+// ── Controles ──
+function setTipo(btn) {
+  filtroTipo = btn.dataset.tipo;
+  document.querySelectorAll('#filtroTipo .filtro-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+function setSent(btn) {
+  filtroSent = btn.dataset.sent;
+  const CM = { Positiva:'active', Negativa:'active-neg', Neutra:'active-neu', Todos:'active' };
+  document.querySelectorAll('#filtroSent .filtro-btn').forEach(b => b.classList.remove('active','active-neg','active-neu'));
+  btn.classList.add(CM[filtroSent]||'active');
+  render();
+}
+
+// ── Init ──
+document.getElementById('footerFecha').textContent = new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'long',year:'numeric'});
+document.addEventListener('DOMContentLoaded', () => { initCharts(); render(); });
+</script>
+</body>
+</html>
